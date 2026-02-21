@@ -1,207 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>THE SHADOW — Street Basketball</title>
+<title>THE SHADOW — ULTRA MODE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  margin:0;
-  background:#050505;
-  overflow:hidden;
-  font-family:Arial, sans-serif;
+body{margin:0;background:#000;font-family:Arial;overflow:hidden;}
+canvas{display:block;}
+
+#menu,#hud{
+position:fixed;
+left:0;right:0;
+text-align:center;
+color:#fff;
+z-index:10;
 }
 
-canvas {
-  display:block;
+#menu{
+top:0;bottom:0;
+display:flex;
+flex-direction:column;
+justify-content:center;
+background:radial-gradient(circle,#111,#000);
 }
 
-.ui {
-  position:fixed;
-  top:10px;
-  left:50%;
-  transform:translateX(-50%);
-  color:#fff;
-  text-align:center;
-  z-index:10;
+button{
+padding:12px 25px;
+margin:10px;
+border:none;
+border-radius:30px;
+background:linear-gradient(45deg,#ff004c,#ff7b00);
+color:#fff;
+font-size:16px;
+cursor:pointer;
 }
 
-.ui h1 {
-  font-size:22px;
-  margin:0;
+#hud{
+top:10px;
+font-size:18px;
 }
-
-.ui p {
-  font-size:14px;
-  opacity:.8;
-}
-
 </style>
 </head>
 
 <body>
 
-<div class="ui">
-  <h1>⚫ THE SHADOW — STREET BASKETBALL</h1>
-  <p>Move: WASD | Shoot: SPACE | Dribble: Q | Dash: SHIFT</p>
+<div id="menu">
+<h1>⚫ THE SHADOW ENGINE — ULTRA MODE ⚫</h1>
+<p>Select Your Character</p>
+
+<button onclick="selectChar('kuroko')">Kuroko — Phantom Shadow</button>
+<button onclick="selectChar('kagami')">Kagami — Zone Dunker</button>
+<button onclick="selectChar('midorima')">Midorima — Full Court Sniper</button>
+<button onclick="selectChar('akashi')">Akashi — Emperor Eye</button>
 </div>
+
+<div id="hud"></div>
 
 <canvas id="game"></canvas>
 
+<audio id="crowd" loop>
+<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_9db5a8b6c8.mp3">
+</audio>
+
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width=innerWidth;
+canvas.height=innerHeight;
 
-window.onresize = () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+window.onresize=()=>{
+canvas.width=innerWidth;
+canvas.height=innerHeight;
+};
+
+let character="kuroko";
+let gameStarted=false;
+
+function selectChar(c){
+character=c;
+document.getElementById("menu").style.display="none";
+document.getElementById("crowd").play();
+gameStarted=true;
 }
 
-const player = {
-  x: 200,
-  y: canvas.height/2,
-  r: 18,
-  speed: 5,
-  color: "#00ffff"
-};
+const keys={};
+addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-const ball = {
-  x: player.x,
-  y: player.y,
-  r: 8,
-  dx: 0,
-  dy: 0,
-  shot: false
-};
+class Player{
+constructor(x,y,color,team,isUser=false){
+this.x=x;this.y=y;this.r=15;
+this.color=color;this.team=team;
+this.speed=isUser?5:3;
+this.isUser=isUser;
+this.shadow=false;
+}
+move(){
+if(!this.isUser)return;
 
-const hoop = {
-  x: canvas.width - 120,
-  y: canvas.height/2,
-  r: 25
-};
+if(keys.w)this.y-=this.speed;
+if(keys.s)this.y+=this.speed;
+if(keys.a)this.x-=this.speed;
+if(keys.d)this.x+=this.speed;
 
-const keys = {};
+if(keys.shift)this.speed=8;
+else this.speed=5;
 
-window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-function movePlayer() {
-  if(keys['w']) player.y -= player.speed;
-  if(keys['s']) player.y += player.speed;
-  if(keys['a']) player.x -= player.speed;
-  if(keys['d']) player.x += player.speed;
-
-  if(player.x < 20) player.x = 20;
-  if(player.x > canvas.width-20) player.x = canvas.width-20;
-  if(player.y < 20) player.y = 20;
-  if(player.y > canvas.height-20) player.y = canvas.height-20;
+if(keys.q && character==="kuroko"){
+this.shadow=true;
+setTimeout(()=>this.shadow=false,1500);
 }
 
-function shootBall(){
-  if(!ball.shot){
-    ball.dx = 12;
-    ball.dy = (hoop.y - ball.y)/20;
-    ball.shot = true;
-  }
+if(keys.e && character==="kagami"){
+this.y-=20;
+}
+
+this.x=Math.max(20,Math.min(canvas.width-20,this.x));
+this.y=Math.max(20,Math.min(canvas.height-20,this.y));
+}
+draw(){
+ctx.globalAlpha=this.shadow?0.25:1;
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+ctx.fillStyle=this.color;
+ctx.fill();
+ctx.globalAlpha=1;
+}
+}
+
+const player=new Player(200,canvas.height/2,"#00ffff","A",true);
+
+const teamA=[player];
+for(let i=0;i<4;i++){
+teamA.push(new Player(200,150+i*120,"#00ff88","A"));
+}
+
+const teamB=[];
+for(let i=0;i<5;i++){
+teamB.push(new Player(canvas.width-250,150+i*120,"#ff0033","B"));
+}
+
+const ball={x:player.x,y:player.y,r:7,dx:0,dy:0,shot:false,owner:player};
+
+const hoopA={x:100,y:canvas.height/2,r:28};
+const hoopB={x:canvas.width-100,y:canvas.height/2,r:28};
+
+let scoreA=0,scoreB=0;
+
+function shoot(){
+if(ball.owner!==player)return;
+ball.shot=true;
+
+let power=character==="kagami"?16:
+character==="midorima"?18:12;
+
+ball.dx=player.team==="A"?power:-power;
+ball.dy=((player.team==="A"?hoopB.y:hoopA.y)-ball.y)/15;
+}
+
+addEventListener("keydown",e=>{
+if(e.code==="Space")shoot();
+});
+
+function aiMove(p){
+let target=ball.owner.team==="A"?ball.owner:player;
+let dx=target.x-p.x;
+let dy=target.y-p.y;
+let dist=Math.hypot(dx,dy);
+
+if(dist>2){
+p.x+=dx/dist*p.speed;
+p.y+=dy/dist*p.speed;
+}
 }
 
 function updateBall(){
-  if(!ball.shot){
-    ball.x = player.x;
-    ball.y = player.y;
-  } else {
-    ball.x += ball.dx;
-    ball.y += ball.dy;
-  }
+if(!ball.shot){
+ball.x=ball.owner.x;
+ball.y=ball.owner.y;
+return;
+}
 
-  const dist = Math.hypot(ball.x-hoop.x, ball.y-hoop.y);
-  if(dist < hoop.r){
-    score++;
-    resetBall();
-  }
+ball.x+=ball.dx;
+ball.y+=ball.dy;
 
-  if(ball.x > canvas.width || ball.y < 0 || ball.y > canvas.height){
-    resetBall();
-  }
+let goal=ball.dx>0?hoopB:hoopA;
+
+if(Math.hypot(ball.x-goal.x,ball.y-goal.y)<goal.r){
+if(ball.dx>0)scoreA++;
+else scoreB++;
+resetBall();
+}
+
+if(ball.x<0||ball.x>canvas.width||ball.y<0||ball.y>canvas.height)
+resetBall();
 }
 
 function resetBall(){
-  ball.shot = false;
-  ball.x = player.x;
-  ball.y = player.y;
+ball.shot=false;
+ball.owner=player;
 }
-
-let score = 0;
 
 function drawCourt(){
-  ctx.fillStyle="#111";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#111";
+ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  ctx.strokeStyle="#333";
-  ctx.lineWidth=5;
-  ctx.strokeRect(20,20,canvas.width-40,canvas.height-40);
-
-  ctx.beginPath();
-  ctx.arc(canvas.width/2,canvas.height/2,80,0,Math.PI*2);
-  ctx.stroke();
+ctx.strokeStyle="#555";
+ctx.lineWidth=3;
+ctx.strokeRect(20,20,canvas.width-40,canvas.height-40);
 }
 
-function drawPlayer(){
-  ctx.beginPath();
-  ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
-  ctx.fillStyle=player.color;
-  ctx.fill();
+function drawHoops(){
+[hoopA,hoopB].forEach(h=>{
+ctx.beginPath();
+ctx.arc(h.x,h.y,h.r,0,Math.PI*2);
+ctx.strokeStyle="red";
+ctx.lineWidth=4;
+ctx.stroke();
+});
 }
 
-function drawBall(){
-  ctx.beginPath();
-  ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
-  ctx.fillStyle="orange";
-  ctx.fill();
-}
-
-function drawHoop(){
-  ctx.beginPath();
-  ctx.arc(hoop.x,hoop.y,hoop.r,0,Math.PI*2);
-  ctx.strokeStyle="red";
-  ctx.lineWidth=5;
-  ctx.stroke();
-}
-
-function drawScore(){
-  ctx.fillStyle="#0ff";
-  ctx.font="20px Arial";
-  ctx.fillText("Score: "+score,30,40);
+function drawHUD(){
+document.getElementById("hud").innerHTML=
+`⚫ SHADOW ${scoreA} — JABBERWOCK ${scoreB} 🔴 <br>
+<small>Mode: ${character.toUpperCase()}</small>`;
 }
 
 function update(){
-  movePlayer();
-  updateBall();
+if(!gameStarted)return;
+player.move();
+teamB.forEach(aiMove);
+updateBall();
 }
 
 function draw(){
-  drawCourt();
-  drawHoop();
-  drawPlayer();
-  drawBall();
-  drawScore();
+if(!gameStarted)return;
+drawCourt();
+drawHoops();
+teamA.forEach(p=>p.draw());
+teamB.forEach(p=>p.draw());
+
+ctx.beginPath();
+ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+ctx.fillStyle="orange";
+ctx.fill();
+
+drawHUD();
 }
 
-function gameLoop(){
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
+function loop(){
+update();
+draw();
+requestAnimationFrame(loop);
 }
 
-window.addEventListener("keydown", e => {
-  if(e.code === "Space") shootBall();
-});
-
-gameLoop();
+loop();
 </script>
 
 </body>
