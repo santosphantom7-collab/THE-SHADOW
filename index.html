@@ -2,71 +2,30 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>THE SHADOW — ANIME GOD MODE</title>
+<title>THE SHADOW — KUROKO NO BASKET ENGINE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-margin:0;
-background:#000;
-font-family:Arial;
-overflow:hidden;
-}
-
-canvas{
-display:block;
-background:#050505;
-border-radius:18px;
-box-shadow:
-0 0 40px rgba(0,255,255,.25),
-0 0 100px rgba(255,0,120,.2),
-0 25px 50px rgba(0,0,0,.9);
-}
-
-#menu,#hud{
-position:fixed;
-left:0;
-right:0;
-text-align:center;
-color:#fff;
-z-index:10;
-}
-
-#menu{
-top:0;
-bottom:0;
-display:flex;
-flex-direction:column;
-justify-content:center;
-background:radial-gradient(circle,#111,#000);
-}
-
-button{
-padding:14px 28px;
-margin:10px;
-border:none;
-border-radius:30px;
-background:linear-gradient(45deg,#ff004c,#ff7b00);
-color:#fff;
-font-size:16px;
-cursor:pointer;
-box-shadow:0 0 20px rgba(255,0,80,.7);
-transition:.3s;
-}
-
-button:hover{
-transform:scale(1.08);
-box-shadow:0 0 35px rgba(255,0,120,1);
-}
-
-h1{
-text-shadow:0 0 15px rgba(255,0,100,1),0 0 35px rgba(255,0,80,.9);
-}
-
+body{margin:0;background:#000;overflow:hidden;font-family:Arial}
+canvas{display:block}
 #hud{
-top:12px;
-font-size:18px;
-text-shadow:0 0 12px rgba(0,255,255,1);
+position:fixed;top:10px;left:0;right:0;
+text-align:center;color:#0ff;font-size:18px;
+text-shadow:0 0 12px cyan;z-index:10;
+}
+#menu{
+position:fixed;inset:0;
+background:radial-gradient(circle,#111,#000);
+display:flex;flex-direction:column;
+justify-content:center;align-items:center;
+color:#fff;z-index:20;
+}
+button{
+padding:14px 28px;margin:10px;
+border:none;border-radius:30px;
+font-size:18px;color:#fff;cursor:pointer;
+background:linear-gradient(45deg,#00f,#0ff);
+box-shadow:0 0 15px cyan;
 }
 </style>
 </head>
@@ -74,26 +33,16 @@ text-shadow:0 0 12px rgba(0,255,255,1);
 <body>
 
 <div id="menu">
-<h1>⚫ THE SHADOW — ANIME GOD MODE ⚫</h1>
-<p>Select Your Character</p>
-<button onclick="startGame('kuroko')">Kuroko — Phantom Shadow</button>
-<button onclick="startGame('kagami')">Kagami — Zone Dunker</button>
-<button onclick="startGame('midorima')">Midorima — Sniper</button>
-<button onclick="startGame('akashi')">Akashi — Emperor</button>
+<h1>⚫ KUROKO NO BASKET — SHADOW ENGINE ⚫</h1>
+<p>Select Character</p>
+<button onclick="selectChar('kuroko')">Kuroko — Phantom Shadow</button>
+<button onclick="selectChar('kagami')">Kagami — Zone Dunker</button>
+<button onclick="selectChar('midorima')">Midorima — Full Court Sniper</button>
+<button onclick="selectChar('akashi')">Akashi — Emperor Eye</button>
 </div>
 
 <div id="hud"></div>
 <canvas id="game"></canvas>
-
-<!-- Sprites -->
-<img id="kurokoImg" src="https://i.imgur.com/VPQGZ8b.png" hidden>
-<img id="kagamiImg" src="https://i.imgur.com/OMKx7X1.png" hidden>
-<img id="midorimaImg" src="https://i.imgur.com/9LezD6n.png" hidden>
-<img id="akashiImg" src="https://i.imgur.com/t3iR9Pr.png" hidden>
-
-<audio id="crowd" loop>
-<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_9db5a8b6c8.mp3">
-</audio>
 
 <script>
 const canvas=document.getElementById("game");
@@ -101,225 +50,164 @@ const ctx=canvas.getContext("2d");
 
 canvas.width=innerWidth;
 canvas.height=innerHeight;
+window.onresize=()=>{canvas.width=innerWidth;canvas.height=innerHeight};
 
-window.onresize=()=>{
-canvas.width=innerWidth;
-canvas.height=innerHeight;
+let gameStarted=false;
+let character="kuroko";
+
+function selectChar(c){
+character=c;
+document.getElementById("menu").style.display="none";
+gameStarted=true;
+}
+
+// SPRITES
+const sprites={
+kuroko:new Image(),
+kagami:new Image(),
+midorima:new Image(),
+akashi:new Image(),
+ball:new Image()
 };
 
-let character="kuroko";
-let gameStarted=false;
+sprites.kuroko.src="https://i.imgur.com/Rq6GQWa.png";
+sprites.kagami.src="https://i.imgur.com/H4Y1X4V.png";
+sprites.midorima.src="https://i.imgur.com/yUsQ0aM.png";
+sprites.akashi.src="https://i.imgur.com/sS4Q6Ln.png";
+sprites.ball.src="https://i.imgur.com/WsK4N6k.png";
 
 const keys={};
 addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-const effects=[];
-
-function spawnEffect(x,y,type){
-effects.push({x,y,type,life:25});
-}
-
-function drawEffects(){
-effects.forEach((e,i)=>{
-if(e.type==="zone"){
-ctx.beginPath();
-ctx.arc(e.x,e.y,50,0,Math.PI*2);
-ctx.strokeStyle="rgba(0,255,255,.9)";
-ctx.lineWidth=4;
-ctx.stroke();
-}
-if(e.type==="shadow"){
-ctx.fillStyle="rgba(100,100,255,.15)";
-ctx.beginPath();
-ctx.arc(e.x,e.y,22,0,Math.PI*2);
-ctx.fill();
-}
-if(e.type==="impact"){
-ctx.strokeStyle="rgba(255,255,255,.9)";
-ctx.lineWidth=3;
-ctx.beginPath();
-ctx.arc(e.x,e.y,35,0,Math.PI*2);
-ctx.stroke();
-}
-e.life--;
-if(e.life<=0)effects.splice(i,1);
-});
-}
-
 class Player{
-constructor(x,y,char,team,isUser=false){
-this.x=x;
-this.y=y;
-this.r=22;
-this.team=team;
+constructor(x,y,isUser=false){
+this.x=x;this.y=y;
+this.speed=5;
 this.isUser=isUser;
-this.speed=isUser?5:3;
-this.shadow=false;
-this.char=char;
-
-this.img=
-char==="kuroko"?kurokoImg:
-char==="kagami"?kagamiImg:
-char==="midorima"?midorimaImg:akashiImg;
+this.zone=false;
 }
-
 move(){
 if(!this.isUser)return;
-
-if(keys.w)this.y-=this.speed;
-if(keys.s)this.y+=this.speed;
-if(keys.a)this.x-=this.speed;
-if(keys.d)this.x+=this.speed;
-
-if(keys.shift)this.speed=8; else this.speed=5;
-
-if(keys.q && this.char==="kuroko"){
-this.shadow=true;
-setTimeout(()=>this.shadow=false,1400);
-}
-
-if(keys.e && this.char==="kagami"){
-this.y-=18;
-spawnEffect(this.x,this.y,"zone");
-}
-
-this.x=Math.max(30,Math.min(canvas.width-30,this.x));
-this.y=Math.max(30,Math.min(canvas.height-30,this.y));
-}
-
-draw(){
-if(this.shadow)spawnEffect(this.x,this.y,"shadow");
-ctx.globalAlpha=this.shadow?0.25:1;
-ctx.drawImage(this.img,this.x-this.r,this.y-this.r,this.r*2,this.r*2);
-ctx.globalAlpha=1;
+let sp=this.speed;
+if(this.zone)sp=9;
+if(keys.w)this.y-=sp;
+if(keys.s)this.y+=sp;
+if(keys.a)this.x-=sp;
+if(keys.d)this.x+=sp;
+this.x=Math.max(50,Math.min(canvas.width-50,this.x));
+this.y=Math.max(80,Math.min(canvas.height-80,this.y));
 }
 }
 
-let player,teamA=[],teamB=[];
+const player=new Player(150,canvas.height/2,true);
 
-const ball={x:0,y:0,r:7,dx:0,dy:0,shot:false,owner:null};
-
-const hoopA={x:120,y:()=>canvas.height/2,r:30};
-const hoopB={x:()=>canvas.width-120,y:()=>canvas.height/2,r:30};
-
-let scoreA=0,scoreB=0;
-
-function startGame(c){
-character=c;
-document.getElementById("menu").style.display="none";
-document.getElementById("crowd").play();
-gameStarted=true;
-
-player=new Player(200,canvas.height/2,c,"A",true);
-teamA=[player];
-for(let i=0;i<4;i++)teamA.push(new Player(200,150+i*120,"kuroko","A"));
-teamB=[];
-for(let i=0;i<5;i++)teamB.push(new Player(canvas.width-250,150+i*120,"kagami","B"));
-
-ball.owner=player;
+const enemies=[];
+for(let i=0;i<4;i++){
+enemies.push(new Player(canvas.width-300,150+i*120,false));
 }
 
-function shoot(){
-if(ball.owner!==player)return;
-ball.shot=true;
+const ball={x:player.x,y:player.y,dx:0,dy:0,shot:false,owner:player};
 
-let power=character==="midorima"?20:
-character==="kagami"?16:
-character==="akashi"?18:12;
+const hoop={x:canvas.width-120,y:()=>canvas.height/2,r:30};
 
-ball.dx=player.team==="A"?power:-power;
-ball.dy=((player.team==="A"?hoopB.y():hoopA.y())-ball.y)/15;
-spawnEffect(player.x,player.y,"impact");
+let score=0;
+
+// SPECIAL ABILITIES
+function activateSpecial(){
+if(character==="kuroko"){
+player.zone=true;
+setTimeout(()=>player.zone=false,1500);
 }
-
-addEventListener("keydown",e=>{ if(e.code==="Space")shoot(); });
-
-function aiMove(p){
-let target=ball.owner||player;
-let dx=target.x-p.x;
-let dy=target.y-p.y;
-let dist=Math.hypot(dx,dy);
-
-if(dist>2){
-p.x+=dx/dist*p.speed;
-p.y+=dy/dist*p.speed;
+if(character==="kagami"){
+ball.dx*=1.8;
+ball.dy*=1.8;
 }
-}
-
-function updateBall(){
-if(!ball.shot){
-ball.x=ball.owner.x;
-ball.y=ball.owner.y;
-return;
-}
-
-ball.x+=ball.dx;
-ball.y+=ball.dy;
-
-let goal=ball.dx>0?hoopB:hoopA;
-
-if(Math.hypot(ball.x-goal.x(),ball.y-goal.y())<goal.r){
-if(ball.dx>0)scoreA++;
-else scoreB++;
-resetBall();
-}
-
-if(ball.x<0||ball.x>canvas.width||ball.y<0||ball.y>canvas.height)
-resetBall();
-}
-
-function resetBall(){
-ball.shot=false;
-ball.owner=player;
-}
-
-function drawCourt(){
-ctx.fillStyle="#070707";
-ctx.fillRect(0,0,canvas.width,canvas.height);
-
-ctx.strokeStyle="#444";
-ctx.lineWidth=3;
-ctx.strokeRect(30,30,canvas.width-60,canvas.height-60);
-}
-
-function drawHoops(){
-[hoopA,hoopB].forEach(h=>{
-ctx.beginPath();
-ctx.arc(h.x(),h.y(),h.r,0,Math.PI*2);
-ctx.strokeStyle="red";
-ctx.lineWidth=4;
-ctx.stroke();
+if(character==="akashi"){
+enemies.forEach(e=>{
+e.x+=Math.random()*120-60;
+e.y+=Math.random()*120-60;
 });
 }
+}
 
-function drawHUD(){
-document.getElementById("hud").innerHTML=
-`⚫ SHADOW ${scoreA} — JABBERWOCK ${scoreB} 🔴 <br>
-<small>Mode: ${character.toUpperCase()} | W A S D Move — SPACE Shoot — Q Shadow — E Zone</small>`;
+addEventListener("keydown",e=>{
+if(e.code==="Space")shoot();
+if(e.key==="q")activateSpecial();
+});
+
+function shoot(){
+if(ball.shot)return;
+ball.shot=true;
+let power=character==="midorima"?22:character==="kagami"?17:13;
+ball.dx=power;
+ball.dy=(hoop.y()-ball.y)/14;
+}
+
+// AI DEFENSE
+function aiMove(p){
+let dx=player.x-p.x;
+let dy=player.y-p.y;
+let dist=Math.hypot(dx,dy);
+if(dist>5){
+p.x+=dx/dist*2.5;
+p.y+=dy/dist*2.5;
+}
 }
 
 function update(){
 if(!gameStarted)return;
+
 player.move();
-teamB.forEach(aiMove);
-updateBall();
+enemies.forEach(aiMove);
+
+if(!ball.shot){
+ball.x=player.x+20;
+ball.y=player.y+20;
+}else{
+ball.x+=ball.dx;
+ball.y+=ball.dy;
+if(Math.hypot(ball.x-hoop.x,ball.y-hoop.y())<hoop.r){
+score++;
+ball.shot=false;
+}
+}
+}
+
+function drawCourt(){
+ctx.fillStyle="#050505";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.strokeStyle="#222";
+ctx.lineWidth=4;
+ctx.strokeRect(30,30,canvas.width-60,canvas.height-60);
+}
+
+function drawHoop(){
+ctx.beginPath();
+ctx.arc(hoop.x,hoop.y(),hoop.r,0,Math.PI*2);
+ctx.strokeStyle="red";
+ctx.lineWidth=4;
+ctx.stroke();
+}
+
+function drawPlayer(p,isUser=true){
+let img=sprites[character];
+if(!isUser)img=sprites.kagami;
+ctx.drawImage(img,p.x-32,p.y-48,64,96);
 }
 
 function draw(){
 if(!gameStarted)return;
 drawCourt();
-drawHoops();
-teamA.forEach(p=>p.draw());
-teamB.forEach(p=>p.draw());
+drawHoop();
 
-ctx.beginPath();
-ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
-ctx.fillStyle="orange";
-ctx.fill();
+drawPlayer(player,true);
+enemies.forEach(e=>drawPlayer(e,false));
 
-drawEffects();
-drawHUD();
+ctx.drawImage(sprites.ball,ball.x-8,ball.y-8,16,16);
+
+hud.innerHTML=`⚫ ${character.toUpperCase()} MODE — SCORE: ${score} <br>
+WASD Move | SPACE Shoot | Q Special Ability`;
 }
 
 function loop(){
